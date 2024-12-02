@@ -1,13 +1,16 @@
 import { run } from "uebersicht";
 export const command = "source My-Spotify.widget/spotify-data.sh";
-export const refreshFrequency = 100;
+export let refreshFrequency = 500;
 let perc = 0;
 
 export const render = ({ output }) => {
-  const segments = output?.split("|");
+  if (output === undefined) return;
 
-  const timePlayed = parseInt(segments[5]);
-  const totalTime = Math.ceil(parseInt(segments[4]) / 1000);
+  const spotify = output?.split("!!")[0].split("|");
+  const bt = output?.split("!!")[1].split("|");
+
+  const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
+  const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
   perc = Math.floor(timePlayed / (totalTime / 100));
 
   // Command for Spotify controls
@@ -23,26 +26,52 @@ export const render = ({ output }) => {
     );
   };
 
+  let bluetoothState = bt[1] === "On" ? true : false;
+
+  const handleTop = (num) => {
+    document.getElementById("container").style.top = `${num}%`;
+    document.getElementById("containerAirpods").style.top = `${num}%`;
+  };
+
   return (
     <div
       style={styles.parent}
       onMouseEnter={() => {
-        document.getElementById("container").style.top = "20px";
+        handleTop(40);
       }}
       onMouseLeave={() => {
-        document.getElementById("container").style.top = "100px";
+        handleTop(105);
       }}
     >
       <div style={styles.container} id="container">
+        <div
+          style={{
+            position: "absolute",
+            top: 5,
+            left: "93%",
+            borderRadius: "50%",
+            height: 10,
+            width: 10,
+            rotate: "45deg",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 0 1px 1px",
+            color: "#ffffff50"
+          }}
+          onClick={() => commandSpotify('quit app "Spotify"')}
+        >
+          +
+        </div>
         <img
           style={styles.albumImg}
-          src={segments[2] ? segments[2] : "My-Spotify.widget/spotify.jpg"}
+          src={spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"}
           alt="Album Art"
         />
         <div style={styles.right}>
           {/* Track Name and Controls */}
           <div style={styles.title}>
-            <div style={styles.trackName}>{segments[0]}</div>
+            <div style={styles.trackName}>{spotify[0]}</div>
             <div style={styles.controls}>
               {/* Previous Button */}
               <svg
@@ -57,14 +86,20 @@ export const render = ({ output }) => {
               </svg>
 
               {/* Play/Pause Button */}
-              {segments[3] !== "playing" ? (
+              {spotify[3] !== "playing" ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 384 512"
                   height={16}
                   width={18}
                   fill="#ffffff90"
-                  onClick={() => commandSpotify("play")}
+                  onClick={() => {
+                    isNaN(timePlayed)
+                      ? run(
+                          `osascript -e 'tell application "Spotify" to play track "spotify:playlist:1Rp9TzAzZSlU8LAYASlgRR"'`
+                        )
+                      : commandSpotify("play");
+                  }}
                 >
                   <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
                 </svg>
@@ -101,7 +136,7 @@ export const render = ({ output }) => {
               <div
                 style={{
                   ...styles.playerThumb,
-                  width: `${perc}%`,
+                  width: perc > 0 ? `${perc}%` : 0,
                   background: "#ffffff30",
                 }}
               ></div>
@@ -110,6 +145,193 @@ export const render = ({ output }) => {
               {isNaN(timePlayed) ? "0:00" : formatTime(timePlayed) || "0:00"}
             </span>
           </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          ...styles.container,
+          left: 315,
+          width: 150,
+          background: "#00000040",
+        }}
+        id="containerAirpods"
+      >
+        {/* ======= TOP START ======= */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-42%",
+            left: 0,
+            width: 160,
+            padding: "5px 0 5px 15px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: 20,
+          }}
+        >
+          <div style={{ fontSize: "14px" }}>{bt[2] ? bt[0] : ""}</div>
+          <div
+            style={{
+              height: 15,
+              width: 22,
+              background: bluetoothState ? "#00ff0025" : "#ffffff25",
+              borderRadius: "20px",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              padding: "0 3px",
+              transition: "300ms all ease",
+              transform: bt[2] ? "" : "translate(-5px, 42px)",
+            }}
+            onClick={() => {
+              run(
+                bluetoothState
+                  ? `osascript -e 'do shell script "/usr/local/bin/blueutil -p 0"'`
+                  : `osascript -e 'do shell script "/usr/local/bin/blueutil -p 1"'`
+              );
+              bluetoothState = true;
+            }}
+          >
+            <div
+              style={{
+                height: 10,
+                width: 10,
+                background: "#ffffff90",
+                borderRadius: "50%",
+                transform: bluetoothState ? "translate(11px,0)" : "",
+                transition: "300ms transform ease",
+              }}
+            ></div>
+          </div>
+        </div>
+
+        {/* ======= TOP END ======= */}
+        <div
+          style={{
+            transition: "400ms opacity ease",
+            position: "absolute",
+            top: 0,
+            left: 13,
+            paddingTop: 10,
+            opacity: bluetoothState && bt[2] ? 1 : 0,
+            visibility: bluetoothState && bt[2] ? "visible" : "hidden",
+          }}
+        >
+          <div style={{ display: "flex", gap: 8 }}>
+            {/* #1 */}
+            <div
+              style={{
+                height: 55,
+                width: 35,
+                borderRadius: 8,
+                background: "#ffffff10",
+                position: "relative",
+                display: "flex",
+                alignItems: "end",
+                fontSize: "14px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  background: +bt[5] < 50 ? "#ffff00" : "#55ff00",
+                  display: "grid",
+                  placeItems: "center",
+                  filter: "blur(40px)",
+                  height: "100%",
+                  width: 35,
+                }}
+              ></div>
+              <h3 style={{ position: "absolute", top: 4, left: 9 }}>{bt[5]}</h3>
+            </div>
+
+            {/* #2 */}
+            <div
+              style={{
+                height: 55,
+                width: 70,
+                borderRadius: 8,
+                background: "#ffffff10",
+                position: "relative",
+                display: "flex",
+                alignItems: "end",
+                fontSize: "14px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  background: +bt[3] < 50 ? "#ffff00" : "#55ff00",
+                  display: "grid",
+                  placeItems: "center",
+                  filter: "blur(40px)",
+                  height: "100%",
+                  width: 70,
+                }}
+              ></div>
+              <h3 style={{ position: "absolute", top: 4, left: 25 }}>
+                {bt[3]}
+              </h3>
+            </div>
+            {/* #3 */}
+            <div
+              style={{
+                height: 55,
+                width: 35,
+                borderRadius: 8,
+                background: "#ffffff10",
+                position: "relative",
+                display: "flex",
+                alignItems: "end",
+                fontSize: "14px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  background:
+                    +bt[4] < 50 ? "yellow" : +bt[4] < 20 ? "red" : "#55ff00",
+                  display: "grid",
+                  placeItems: "center",
+                  filter: "blur(40px)",
+                  height: "100%",
+                  width: 35,
+                }}
+              ></div>
+              <h3 style={{ position: "absolute", top: 4, left: 9 }}>{bt[4]}</h3>
+            </div>
+          </div>
+        </div>
+
+        <p
+          style={{
+            transition: "400ms opacity ease",
+            position: "absolute",
+            top: -2,
+            left: 15,
+            opacity: bluetoothState && !bt[2] ? 1 : 0,
+            visibility: bluetoothState && !bt[2] ? "visible" : "hidden",
+          }}
+        >
+          No Connected
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            padding: "16px 0",
+            height: "100%",
+            transition: "400ms opacity ease",
+            position: "absolute",
+            top: -2,
+            left: 15,
+            opacity: !bluetoothState ? 1 : 0,
+            visibility: !bluetoothState ? "visible" : "hidden",
+          }}
+        >
+          Bluetooth
         </div>
       </div>
     </div>
@@ -125,32 +347,34 @@ const formatTime = (time) => {
   return minutes + ":" + seconds;
 };
 
+export const className = `
+  user-select: none;
+  cursor: default;
+`;
+
 const styles = {
   parent: {
     position: "relative",
-    top: 800,
+    top: 750,
     left: 0,
-    height: 100,
-    width: 350,
+    height: 170,
+    width: 600,
   },
   container: {
     position: "absolute",
-    top: 20,
-    left: 10,
+    top: "105%",
+    left: "1.5%",
     fontFamily: "Montserrat, sans-serif",
     width: 270,
     height: 55,
-    borderRadius: 20,
+    borderRadius: 18,
     display: "flex",
     alignItems: "center",
     color: "#fff",
     padding: "10px 15px",
-    overflow: "hidden",
-    border: "0.5px solid #ffffff15",
-    background: "#00000040",
+    border: "0.5px solid #ffffff20",
+    background: "#00000030",
     transition: "500ms all ease",
-    userSelect: "none",
-    pointerEvents: "auto",
   },
   albumImg: {
     display: "block",
@@ -178,7 +402,6 @@ const styles = {
     width: "130px",
     color: "#fff",
     display: "inline-block",
-    WebkitAnimation: "scroll 10s linear infinite",
   },
   controls: {
     with: "40%",
