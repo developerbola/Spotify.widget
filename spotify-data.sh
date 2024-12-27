@@ -26,9 +26,13 @@ connected=$(echo "$bt" | grep -m 1 -E "^\s*Connected:" | sed -E 's/^\s*Connected
 case=$(echo "$bt" | grep -m 1 -E "^\s*Case Battery Level:" | sed -E 's/^\s*Case Battery Level:\s*([A-Za-z]+)/\1/'| awk '{print $4}' | awk -F'%' '{print $1}')
 right=$(echo "$bt" | grep -m 1 -E "^\s*Right Battery Level:" | sed -E 's/^\s*Right Battery Level:\s*([A-Za-z]+)/\1/'| awk '{print $4}' | awk -F'%' '{print $1}')
 left=$(echo "$bt" | grep -m 1 -E "^\s*Left Battery Level:" | sed -E 's/^\s*Left Battery Level:\s*([A-Za-z]+)/\1/'| awk '{print $4}' | awk -F'%' '{print $1}')
-
+paired_devices=$(echo "$bt" | sed -n '/Device/,$p' | grep -E "^\s*Device" | sed 's/^[[:space:]]*Device: //')
 # Call the function with the output from system_profiler
-bt_status="$name|$state|$connected|$case|$right|$left"
+bt_status="$name|$state|$connected|$case|$right|$left|$paired_devices"
+
+wifi=$(networksetup -getairportnetwork en0)
+wifi_status=$(echo "$wifi" | sed -E 's/^\s*Network:\s*([A-Za-z]+)/\1/')
+
 
 # Output the track info
-echo "$spotify!!$bt_status"
+echo "$spotify!!$bt_status!!$wifi_status"

@@ -2,12 +2,14 @@ import { run } from "uebersicht";
 export const command = "source My-Spotify.widget/spotify-data.sh";
 export let refreshFrequency = 500;
 let perc = 0;
-
+let bt = [];
+let wf = "";
 export const render = ({ output }) => {
   if (output === undefined) return;
 
   const spotify = output?.split("!!")[0].split("|");
-  const bt = output?.split("!!")[1].split("|");
+  bt = output?.split("!!")[1]?.split("|");
+  wf = output.split("!!")[2]?.split(":");
 
   const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
   const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
@@ -26,52 +28,34 @@ export const render = ({ output }) => {
     );
   };
 
-  let bluetoothState = bt[1] === "On" ? true : false;
-
-  const handleTop = (num) => {
-    document.getElementById("container").style.top = `${num}%`;
-    document.getElementById("containerAirpods").style.top = `${num}%`;
+  let bluetoothState = false;
+  if (bt !== undefined) {
+    bluetoothState = bt[1] === "On" ? true : false;
+  }
+  const toggleWiFi = async () => {
+    await run(
+      `osascript -e 'do shell script "/usr/sbin/networksetup -setairportpower en0 ${
+        wf ? "off" : "on"
+      }"'`
+    );
   };
 
   return (
-    <div
-      style={styles.parent}
-      onMouseEnter={() => {
-        handleTop(40);
-      }}
-      onMouseLeave={() => {
-        handleTop(105);
-      }}
-    >
+    <div style={styles.parent}>
+      {/* SPOTIFY CONTAINER */}
       <div style={styles.container} id="container">
-        <div
-          style={{
-            position: "absolute",
-            top: 5,
-            left: "93%",
-            borderRadius: "50%",
-            height: 10,
-            width: 10,
-            rotate: "45deg",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 0 1px 1px",
-            color: "#ffffff50"
-          }}
-          onClick={() => commandSpotify('quit app "Spotify"')}
-        >
-          +
-        </div>
         <img
           style={styles.albumImg}
           src={spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"}
           alt="Album Art"
+          onDoubleClick={() => commandSpotify('quit app "Spotify"')}
         />
         <div style={styles.right}>
           {/* Track Name and Controls */}
           <div style={styles.title}>
-            <div style={styles.trackName}>{spotify[0]}</div>
+            <div style={styles.trackName}>
+              {spotify[0] ? spotify[0] : "Not Running"}
+            </div>
             <div style={styles.controls}>
               {/* Previous Button */}
               <svg
@@ -147,7 +131,7 @@ export const render = ({ output }) => {
           </div>
         </div>
       </div>
-
+      {/* BLUETOOTH CONTAINER */}
       <div
         style={{
           ...styles.container,
@@ -157,7 +141,6 @@ export const render = ({ output }) => {
         }}
         id="containerAirpods"
       >
-        {/* ======= TOP START ======= */}
         <div
           style={{
             position: "absolute",
@@ -171,7 +154,9 @@ export const render = ({ output }) => {
             borderRadius: 20,
           }}
         >
-          <div style={{ fontSize: "14px" }}>{bt[2] ? bt[0] : ""}</div>
+          <div style={{ fontSize: "14px" }}>
+            {bt !== undefined && bt[2] ? bt[0] : ""}
+          </div>
           <div
             style={{
               height: 15,
@@ -183,7 +168,8 @@ export const render = ({ output }) => {
               alignItems: "center",
               padding: "0 3px",
               transition: "300ms all ease",
-              transform: bt[2] ? "" : "translate(-5px, 42px)",
+              transform:
+                bt !== undefined && bt[2] ? "" : "translate(-5px, 42px)",
             }}
             onClick={() => {
               run(
@@ -207,7 +193,6 @@ export const render = ({ output }) => {
           </div>
         </div>
 
-        {/* ======= TOP END ======= */}
         <div
           style={{
             transition: "400ms opacity ease",
@@ -220,7 +205,6 @@ export const render = ({ output }) => {
           }}
         >
           <div style={{ display: "flex", gap: 8 }}>
-            {/* #1 */}
             <div
               style={{
                 height: 55,
@@ -232,11 +216,18 @@ export const render = ({ output }) => {
                 alignItems: "end",
                 fontSize: "14px",
                 overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
-                  background: +bt[5] < 50 ? "#ffff00" : "#55ff00",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  background:
+                    bt !== undefined && +bt[5] < 50 ? "#ffff00" : "#55ff00",
                   display: "grid",
                   placeItems: "center",
                   filter: "blur(40px)",
@@ -244,10 +235,9 @@ export const render = ({ output }) => {
                   width: 35,
                 }}
               ></div>
-              <h3 style={{ position: "absolute", top: 4, left: 9 }}>{bt[5]}</h3>
+              <p>{bt !== undefined && bt[5] ? bt[5] : ""}</p>
             </div>
 
-            {/* #2 */}
             <div
               style={{
                 height: 55,
@@ -259,11 +249,16 @@ export const render = ({ output }) => {
                 alignItems: "end",
                 fontSize: "14px",
                 overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
-                  background: +bt[3] < 50 ? "#ffff00" : "#55ff00",
+                  position: "absolute",
+                  background:
+                    bt !== undefined && +bt[3] < 50 ? "#ffff00" : "#55ff00",
                   display: "grid",
                   placeItems: "center",
                   filter: "blur(40px)",
@@ -271,11 +266,10 @@ export const render = ({ output }) => {
                   width: 70,
                 }}
               ></div>
-              <h3 style={{ position: "absolute", top: 4, left: 25 }}>
-                {bt[3]}
-              </h3>
+              <h2 style={{ marginTop: 20 }}>
+                {bt !== undefined && bt[3] ? bt[3] : ""}
+              </h2>
             </div>
-            {/* #3 */}
             <div
               style={{
                 height: 55,
@@ -287,12 +281,18 @@ export const render = ({ output }) => {
                 alignItems: "end",
                 fontSize: "14px",
                 overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
                   background:
-                    +bt[4] < 50 ? "yellow" : +bt[4] < 20 ? "red" : "#55ff00",
+                    bt !== undefined && +bt[5] < 50 ? "#ffff00" : "#55ff00",
                   display: "grid",
                   placeItems: "center",
                   filter: "blur(40px)",
@@ -300,11 +300,10 @@ export const render = ({ output }) => {
                   width: 35,
                 }}
               ></div>
-              <h3 style={{ position: "absolute", top: 4, left: 9 }}>{bt[4]}</h3>
+              <p>{bt !== undefined && bt[4] ? bt[4] : ""}</p>
             </div>
           </div>
         </div>
-
         <p
           style={{
             transition: "400ms opacity ease",
@@ -317,7 +316,6 @@ export const render = ({ output }) => {
         >
           No Connected
         </p>
-
         <div
           style={{
             display: "flex",
@@ -333,6 +331,95 @@ export const render = ({ output }) => {
         >
           Bluetooth
         </div>
+      </div>
+      {/* WIFI CONTAINER */}
+      <div
+        style={{
+          ...styles.container,
+          left: 500,
+          width: 120,
+          background: "#00000040",
+        }}
+        id="containerAirpods"
+      >
+        {/* turn on/off controller */}
+        <div
+          style={{
+            display: "flex",
+            padding: "16px 0",
+            height: "100%",
+            position: "absolute",
+            top: -2,
+            left: 15,
+          }}
+        >
+          Wi-Fi
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            top: 9,
+            left: 98,
+            width: 160,
+            padding: "5px 0 5px 15px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: 20,
+          }}
+        >
+          <div
+            style={{
+              height: 15,
+              width: 22,
+              background: wf[0] ? "#00ff0025" : "#ffffff25",
+              borderRadius: "20px",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              padding: "0 3px",
+              transition: "300ms all ease",
+              transform: wf[0] ? "" : "translate(-5px,0)",
+            }}
+            onClick={() => toggleWiFi()}
+          >
+            <div
+              style={{
+                height: 10,
+                width: 10,
+                background: "#ffffff90",
+                borderRadius: "50%",
+                transform: wf[0] ? "translate(11px,0)" : "",
+                transition: "300ms transform ease",
+              }}
+            ></div>
+          </div>
+        </div>
+        {/* turn on/off controller END */}
+        {/* CONNECTED DEVICE */}
+        <div
+          style={{
+            transition: "400ms opacity ease",
+            position: "absolute",
+            top: 38,
+            left: 10,
+            opacity: wf[1] ? 1 : 0,
+            visibility: wf[1] ? "visible" : "hidden",
+            background: "#ffffff10",
+            height: 25,
+            width: 110,
+            padding: "0 10px",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <p style={{ fontSize: "14px", color: "#ffffffcc" }}>
+            {wf[1] ? wf[1] : ""}
+          </p>
+        </div>
+        {/* CONNECTED DEVICE END */}
       </div>
     </div>
   );
@@ -359,10 +446,11 @@ const styles = {
     left: 0,
     height: 170,
     width: 600,
+    zIndex: 999,
   },
   container: {
     position: "absolute",
-    top: "105%",
+    top: "40%",
     left: "1.5%",
     fontFamily: "Montserrat, sans-serif",
     width: 270,
