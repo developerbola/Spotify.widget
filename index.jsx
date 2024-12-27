@@ -3,7 +3,7 @@ export const command = "source My-Spotify.widget/spotify-data.sh";
 export let refreshFrequency = 500;
 let perc = 0;
 let bt = [];
-let wf = "";
+let wf = [];
 export const render = ({ output }) => {
   if (output === undefined) return;
 
@@ -35,7 +35,9 @@ export const render = ({ output }) => {
   const toggleWiFi = async () => {
     await run(
       `osascript -e 'do shell script "/usr/sbin/networksetup -setairportpower en0 ${
-        wf ? "off" : "on"
+        wf[0].split(" ")[wf[0].split(" ").length - 1].includes("off.")
+          ? "on"
+          : "off"
       }"'`
     );
   };
@@ -373,14 +375,22 @@ export const render = ({ output }) => {
             style={{
               height: 15,
               width: 22,
-              background: wf[0] ? "#00ff0025" : "#ffffff25",
+              background: !wf[0]
+                .split(" ")
+                [wf[0].split(" ").length - 1].includes("off.")
+                ? "#00ff0025"
+                : "#ffffff25",
               borderRadius: "20px",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
               padding: "0 3px",
               transition: "300ms all ease",
-              transform: wf[0] ? "" : "translate(-5px,0)",
+              transform: !wf[0]
+                .split(" ")
+                [wf[0].split(" ").length - 1].includes("off.")
+                ? ""
+                : "translate(-5px,0)",
             }}
             onClick={() => toggleWiFi()}
           >
@@ -390,7 +400,11 @@ export const render = ({ output }) => {
                 width: 10,
                 background: "#ffffff90",
                 borderRadius: "50%",
-                transform: wf[0] ? "translate(11px,0)" : "",
+                transform: !wf[0]
+                  .split(" ")
+                  [wf[0].split(" ").length - 1].includes("off.")
+                  ? "translate(11px,0)"
+                  : "",
                 transition: "300ms transform ease",
               }}
             ></div>
