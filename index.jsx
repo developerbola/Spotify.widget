@@ -9,7 +9,7 @@ export const render = ({ output }) => {
 
   const spotify = output?.split("!!")[0].split("|");
   bt = output?.split("!!")[1]?.split("|");
-  wf = output.split("!!")[2]?.split(":");
+  wf = output?.split("!!")[2]?.split(":") || ["1 1", "1 1"];
 
   const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
   const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
