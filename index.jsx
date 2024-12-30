@@ -43,9 +43,31 @@ export const render = ({ output }) => {
   };
 
   return (
-    <div style={styles.parent}>
+    <div style={styles.parent} id="parent">
       {/* SPOTIFY CONTAINER */}
-      <div style={styles.container} id="container">
+      <div style={{ ...styles.container, overflow: "hidden" }} id="container">
+        {/* ========= DECORATION ========= */}
+        {/* BACKGROUND IMAGE EFFECT START */}
+        <div
+          style={{
+            background: `url(${
+              spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"
+            })`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            height: "100%",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            zIndex: -1,
+            WebkitFilter: "blur(10px)",
+            opacity: 0.6,
+          }}
+        ></div>
+        {/* BACKGROUND IMAGE EFFECT END */}
+        {/* ========= DECORATION END ========= */}
+
         <img
           style={styles.albumImg}
           src={spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"}
@@ -86,6 +108,9 @@ export const render = ({ output }) => {
                         )
                       : commandSpotify("play");
                   }}
+                  onDoubleClick={() =>
+                    run(`osascript -e 'tell application "Spotify" to play'`)
+                  }
                 >
                   <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
                 </svg>
@@ -126,6 +151,9 @@ export const render = ({ output }) => {
                   background: "#ffffff30",
                 }}
               ></div>
+              {/* SPOTIFY TIMELINE WAVE EFFECT START */}
+
+              {/* SPOTIFY TIMELINE WAVE EFFECT END */}
             </div>
             <span style={styles.timePlayed}>
               {isNaN(timePlayed) ? "0:00" : formatTime(timePlayed) || "0:00"}
@@ -137,6 +165,7 @@ export const render = ({ output }) => {
       <div
         style={{
           ...styles.container,
+          top: "89%",
           left: 315,
           width: 150,
           background: "#00000040",
@@ -338,11 +367,12 @@ export const render = ({ output }) => {
       <div
         style={{
           ...styles.container,
+          top: "100%",
           left: 500,
           width: 120,
           background: "#00000040",
         }}
-        id="containerAirpods"
+        id="containerWifi"
       >
         {/* turn on/off controller */}
         <div
@@ -451,6 +481,13 @@ const formatTime = (time) => {
 export const className = `
   user-select: none;
   cursor: default;
+  #parent:hover #containerAirpods,
+  #parent:hover #containerWifi {
+    top: 40% !important;
+  }
+  #parent {
+    z-index: 10000 !important;
+  }
 `;
 
 const styles = {
@@ -460,7 +497,7 @@ const styles = {
     left: 0,
     height: 170,
     width: 600,
-    zIndex: 999,
+    zIndex: 10000,
   },
   container: {
     position: "absolute",
