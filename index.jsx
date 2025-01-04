@@ -92,8 +92,6 @@ export const render = ({ output }) => {
       if (r < 50) {
         factor = 6;
       }
-      console.log(sortedColors[1]);
-      console.log(`${r}, ${g}, ${b}`);
 
       // Update avgColor state or variable
       document.getElementById(
