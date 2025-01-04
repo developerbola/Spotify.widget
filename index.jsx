@@ -49,7 +49,7 @@ export const render = ({ output }) => {
 
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
-      let factor = 3;
+      let factor = 6;
 
       const colorCounts = {};
       for (let i = 0; i < pixels.length; i += 4) {
@@ -80,6 +80,8 @@ export const render = ({ output }) => {
       g = Math.floor(g / count);
       b = Math.floor(b / count);
 
+      document.getElementById("right").style.mixBlendMode = "overlay";
+
       if (g > 80 || b > 80) {
         document.getElementById("right").style.mixBlendMode = "difference";
       }
@@ -88,8 +90,10 @@ export const render = ({ output }) => {
         factor = 4;
       }
       if (r < 50) {
-        factor = 5;
+        factor = 6;
       }
+      console.log(sortedColors[1]);
+      console.log(`${r}, ${g}, ${b}`);
 
       // Update avgColor state or variable
       document.getElementById(
@@ -158,10 +162,7 @@ export const render = ({ output }) => {
           ></div>
         </div>
 
-        <div
-          style={{ ...styles.right, mixBlendMode: "plus-lighter" }}
-          id="right"
-        >
+        <div style={{ ...styles.right }} id="right">
           {/* Track Name and Controls */}
           <div style={styles.title}>
             <div style={styles.trackName} id="trackname">
@@ -234,7 +235,10 @@ export const render = ({ output }) => {
 
           {/* Player Thumb */}
           <div style={styles.player}>
-            <div style={styles.playerThumb} id="playerthumbcontainer">
+            <div
+              style={{ ...styles.playerThumb, overflow: "hidden" }}
+              id="playerthumbcontainer"
+            >
               <div
                 style={{
                   ...styles.playerThumb,
