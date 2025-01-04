@@ -1,15 +1,11 @@
 import { run } from "uebersicht";
-export const command = "source My-Spotify.widget/spotify-data.sh";
+export const command = "source Spotify.widget/spotify.sh";
 export let refreshFrequency = 500;
 let perc = 0;
-let bt = [];
-let wf = [];
 export const render = ({ output }) => {
   if (output === undefined) return;
 
   const spotify = output?.split("!!")[0].split("|");
-  bt = output?.split("!!")[1]?.split("|");
-  wf = output?.split("!!")[2]?.split(":") || ["1 1", "1 1"];
 
   const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
   const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
@@ -28,56 +24,147 @@ export const render = ({ output }) => {
     );
   };
 
-  let bluetoothState = false;
-  if (bt !== undefined) {
-    bluetoothState = bt[1] === "On" ? true : false;
+  function getAverageRGB(e) {
+    try {
+      const img = e.target;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      // Check if canvas context is available
+      if (!context) {
+        console.error("Canvas context is not available.");
+        return;
+      }
+
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+
+      // Check for valid dimensions
+      if (!canvas.width || !canvas.height) {
+        console.error("Invalid image dimensions:", canvas.width, canvas.height);
+        return;
+      }
+
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      let factor = 3;
+
+      const colorCounts = {};
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = Math.min(Math.floor(parseInt(pixels[i]) * factor), 255);
+        const g = Math.min(Math.floor(parseInt(pixels[i + 1]) * factor), 255);
+        const b = Math.min(Math.floor(parseInt(pixels[i + 2]) * factor), 255);
+        const color = `${r},${g},${b}`;
+        colorCounts[color] = (colorCounts[color] || 0) + 1;
+      }
+
+      var sortedColors = Object.entries(colorCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([color]) => color);
+
+      let r = 0,
+        g = 0,
+        b = 0,
+        count = 0;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        r += pixels[i]; // Red
+        g += pixels[i + 1]; // Green
+        b += pixels[i + 2]; // Blue
+        count++;
+      }
+
+      r = Math.floor(r / count);
+      g = Math.floor(g / count);
+      b = Math.floor(b / count);
+
+      if (g > 80 || b > 80) {
+        document.getElementById("right").style.mixBlendMode = "difference";
+      }
+      if (r < 100) {
+        document.getElementById("right").style.mixBlendMode = "plus-lighter";
+        factor = 4;
+      }
+      if (r < 50) {
+        factor = 5;
+      }
+
+      // Update avgColor state or variable
+      document.getElementById(
+        "container"
+      ).style.background = `rgb(${r}, ${g}, ${b})`;
+      document.getElementById(
+        "imageCover"
+      ).style.background = `linear-gradient(90deg , transparent, rgb(${r}, ${g}, ${b}) )`;
+
+      document.getElementById(
+        "container"
+      ).style.color = `rgb(${sortedColors[1]})`;
+      document.getElementById(
+        "trackname"
+      ).style.color = `rgb(${sortedColors[1]})`;
+      document.getElementById(
+        "playerthumb"
+      ).style.background = `rgb(${sortedColors[1]})`;
+      document.getElementById(
+        "playerthumbcontainer"
+      ).style.background = `rgb(${sortedColors[1]},0.3)`;
+      document
+        .querySelectorAll("#controls")
+        .forEach((e) => (e.style.fill = `rgb(${sortedColors[1]})`));
+    } catch (error) {
+      console.error("Error in getAverageRGB:", error);
+    }
   }
-  const toggleWiFi = async () => {
-    await run(
-      `osascript -e 'do shell script "/usr/sbin/networksetup -setairportpower en0 ${
-        wf[0].split(" ")[wf[0].split(" ").length - 1].includes("off.")
-          ? "on"
-          : "off"
-      }"'`
-    );
-  };
 
   return (
     <div style={styles.parent} id="parent">
       {/* SPOTIFY CONTAINER */}
-      <div style={{ ...styles.container, overflow: "hidden" }} id="container">
-        {/* ========= DECORATION ========= */}
-        {/* BACKGROUND IMAGE EFFECT START */}
+      <div
+        style={{
+          ...styles.container,
+          overflow: "hidden",
+        }}
+        id="container"
+      >
         <div
+          id="cover"
           style={{
-            background: `url(${
-              spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"
-            })`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            zIndex: -1,
-            WebkitFilter: "blur(10px)",
-            opacity: 0.6,
+            ...styles.albumImg,
+            position: "relative",
           }}
-        ></div>
-        {/* BACKGROUND IMAGE EFFECT END */}
-        {/* ========= DECORATION END ========= */}
+        >
+          <img
+            style={{ ...styles.albumImg, flex: "1 1 auto" }}
+            src={spotify[2] ? spotify[2] : "Spotify.widget/spotify.jpg"}
+            alt="Album Art"
+            onDoubleClick={() => commandSpotify('quit app "Spotify"')}
+            id="image"
+            crossOrigin="anonymous"
+            onLoad={(e) => getAverageRGB(e)}
+          />
+          <div
+            style={{
+              position: "absolute",
+              zIndex: 10,
+              top: 0,
+              left: 0,
+              height: 80,
+              width: 80,
+            }}
+            id="imageCover"
+          ></div>
+        </div>
 
-        <img
-          style={styles.albumImg}
-          src={spotify[2] ? spotify[2] : "My-Spotify.widget/spotify.jpg"}
-          alt="Album Art"
-          onDoubleClick={() => commandSpotify('quit app "Spotify"')}
-        />
-        <div style={styles.right}>
+        <div
+          style={{ ...styles.right, mixBlendMode: "plus-lighter" }}
+          id="right"
+        >
           {/* Track Name and Controls */}
           <div style={styles.title}>
-            <div style={styles.trackName}>
+            <div style={styles.trackName} id="trackname">
               {spotify[0] ? spotify[0] : "Not Running"}
             </div>
             <div style={styles.controls}>
@@ -85,10 +172,11 @@ export const render = ({ output }) => {
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 512 512"
-                fill="#ffffff90"
+                fill={"#ffffff90"}
                 height={15}
                 width={15}
                 onClick={() => commandSpotify("previous track")}
+                id="controls"
               >
                 <path d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-320c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3l0 41.7 0 41.7L459.5 440.6zM256 352l0-96 0-128 0-32c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-64z" />
               </svg>
@@ -100,7 +188,7 @@ export const render = ({ output }) => {
                   viewBox="0 0 384 512"
                   height={16}
                   width={18}
-                  fill="#ffffff90"
+                  fill={"#ffffff90"}
                   onClick={() => {
                     isNaN(timePlayed)
                       ? run(
@@ -111,6 +199,7 @@ export const render = ({ output }) => {
                   onDoubleClick={() =>
                     run(`osascript -e 'tell application "Spotify" to play'`)
                   }
+                  id="controls"
                 >
                   <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
                 </svg>
@@ -120,8 +209,9 @@ export const render = ({ output }) => {
                   viewBox="0 0 320 512"
                   height={18}
                   width={18}
-                  fill="#ffffff90"
+                  fill={"#ffffff90"}
                   onClick={() => commandSpotify("pause")}
+                  id="controls"
                 >
                   <path d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z" />
                 </svg>
@@ -131,10 +221,11 @@ export const render = ({ output }) => {
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 512 512"
-                fill="#ffffff90"
+                fill={"#ffffff90"}
                 height={15}
                 width={15}
                 onClick={() => commandSpotify("next track")}
+                id="controls"
               >
                 <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416L0 96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3l0 41.7 0 41.7L52.5 440.6zM256 352l0-96 0-128 0-32c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29l0-64z" />
               </svg>
@@ -143,327 +234,20 @@ export const render = ({ output }) => {
 
           {/* Player Thumb */}
           <div style={styles.player}>
-            <div style={styles.playerThumb}>
+            <div style={styles.playerThumb} id="playerthumbcontainer">
               <div
                 style={{
                   ...styles.playerThumb,
                   width: perc > 0 ? `${perc}%` : 0,
-                  background: "#ffffff30",
                 }}
+                id="playerthumb"
               ></div>
-              {/* SPOTIFY TIMELINE WAVE EFFECT START */}
-
-              {/* SPOTIFY TIMELINE WAVE EFFECT END */}
             </div>
             <span style={styles.timePlayed}>
               {isNaN(timePlayed) ? "0:00" : formatTime(timePlayed) || "0:00"}
             </span>
           </div>
         </div>
-      </div>
-      {/* BLUETOOTH CONTAINER */}
-      <div
-        style={{
-          ...styles.container,
-          top: "89%",
-          left: 315,
-          width: 150,
-          background: "#00000040",
-        }}
-        id="containerAirpods"
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "-42%",
-            left: 0,
-            width: 160,
-            padding: "5px 0 5px 15px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderRadius: 20,
-          }}
-        >
-          <div style={{ fontSize: "14px" }}>
-            {bt !== undefined && bt[2] ? bt[0] : ""}
-          </div>
-          <div
-            style={{
-              height: 15,
-              width: 22,
-              background: bluetoothState ? "#00ff0025" : "#ffffff25",
-              borderRadius: "20px",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 3px",
-              transition: "300ms all ease",
-              transform:
-                bt !== undefined && bt[2] ? "" : "translate(-5px, 42px)",
-            }}
-            onClick={() => {
-              run(
-                bluetoothState
-                  ? `osascript -e 'do shell script "/usr/local/bin/blueutil -p 0"'`
-                  : `osascript -e 'do shell script "/usr/local/bin/blueutil -p 1"'`
-              );
-              bluetoothState = true;
-            }}
-          >
-            <div
-              style={{
-                height: 10,
-                width: 10,
-                background: "#ffffff90",
-                borderRadius: "50%",
-                transform: bluetoothState ? "translate(11px,0)" : "",
-                transition: "300ms transform ease",
-              }}
-            ></div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            transition: "400ms opacity ease",
-            position: "absolute",
-            top: 0,
-            left: 13,
-            paddingTop: 10,
-            opacity: bluetoothState && bt[2] ? 1 : 0,
-            visibility: bluetoothState && bt[2] ? "visible" : "hidden",
-          }}
-        >
-          <div style={{ display: "flex", gap: 8 }}>
-            <div
-              style={{
-                height: 55,
-                width: 35,
-                borderRadius: 8,
-                background: "#ffffff10",
-                position: "relative",
-                display: "flex",
-                alignItems: "end",
-                fontSize: "14px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  background:
-                    bt !== undefined && +bt[5] < 50 ? "#ffff00" : "#55ff00",
-                  display: "grid",
-                  placeItems: "center",
-                  filter: "blur(40px)",
-                  height: "100%",
-                  width: 35,
-                }}
-              ></div>
-              <p>{bt !== undefined && bt[5] ? bt[5] : ""}</p>
-            </div>
-
-            <div
-              style={{
-                height: 55,
-                width: 70,
-                borderRadius: 8,
-                background: "#ffffff10",
-                position: "relative",
-                display: "flex",
-                alignItems: "end",
-                fontSize: "14px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  background:
-                    bt !== undefined && +bt[3] < 50 ? "#ffff00" : "#55ff00",
-                  display: "grid",
-                  placeItems: "center",
-                  filter: "blur(40px)",
-                  height: "100%",
-                  width: 70,
-                }}
-              ></div>
-              <h2 style={{ marginTop: 20 }}>
-                {bt !== undefined && bt[3] ? bt[3] : ""}
-              </h2>
-            </div>
-            <div
-              style={{
-                height: 55,
-                width: 35,
-                borderRadius: 8,
-                background: "#ffffff10",
-                position: "relative",
-                display: "flex",
-                alignItems: "end",
-                fontSize: "14px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  background:
-                    bt !== undefined && +bt[5] < 50 ? "#ffff00" : "#55ff00",
-                  display: "grid",
-                  placeItems: "center",
-                  filter: "blur(40px)",
-                  height: "100%",
-                  width: 35,
-                }}
-              ></div>
-              <p>{bt !== undefined && bt[4] ? bt[4] : ""}</p>
-            </div>
-          </div>
-        </div>
-        <p
-          style={{
-            transition: "400ms opacity ease",
-            position: "absolute",
-            top: -2,
-            left: 15,
-            opacity: bluetoothState && !bt[2] ? 1 : 0,
-            visibility: bluetoothState && !bt[2] ? "visible" : "hidden",
-          }}
-        >
-          No Connected
-        </p>
-        <div
-          style={{
-            display: "flex",
-            padding: "16px 0",
-            height: "100%",
-            transition: "400ms opacity ease",
-            position: "absolute",
-            top: -2,
-            left: 15,
-            opacity: !bluetoothState ? 1 : 0,
-            visibility: !bluetoothState ? "visible" : "hidden",
-          }}
-        >
-          Bluetooth
-        </div>
-      </div>
-      {/* WIFI CONTAINER */}
-      <div
-        style={{
-          ...styles.container,
-          top: "100%",
-          left: 500,
-          width: 120,
-          background: "#00000040",
-        }}
-        id="containerWifi"
-      >
-        {/* turn on/off controller */}
-        <div
-          style={{
-            display: "flex",
-            padding: "16px 0",
-            height: "100%",
-            position: "absolute",
-            top: -2,
-            left: 15,
-          }}
-        >
-          Wi-Fi
-        </div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: 9,
-            left: 98,
-            width: 160,
-            padding: "5px 0 5px 15px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderRadius: 20,
-          }}
-        >
-          <div
-            style={{
-              height: 15,
-              width: 22,
-              background: !wf[0]
-                .split(" ")
-                [wf[0].split(" ").length - 1].includes("off.")
-                ? "#00ff0025"
-                : "#ffffff25",
-              borderRadius: "20px",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 3px",
-              transition: "300ms all ease",
-              transform: !wf[0]
-                .split(" ")
-                [wf[0].split(" ").length - 1].includes("off.")
-                ? ""
-                : "translate(-5px,0)",
-            }}
-            onClick={() => toggleWiFi()}
-          >
-            <div
-              style={{
-                height: 10,
-                width: 10,
-                background: "#ffffff90",
-                borderRadius: "50%",
-                transform: !wf[0]
-                  .split(" ")
-                  [wf[0].split(" ").length - 1].includes("off.")
-                  ? "translate(11px,0)"
-                  : "",
-                transition: "300ms transform ease",
-              }}
-            ></div>
-          </div>
-        </div>
-        {/* turn on/off controller END */}
-        {/* CONNECTED DEVICE */}
-        <div
-          style={{
-            transition: "400ms opacity ease",
-            position: "absolute",
-            top: 38,
-            left: 10,
-            opacity: wf[1] ? 1 : 0,
-            visibility: wf[1] ? "visible" : "hidden",
-            background: "#ffffff10",
-            height: 25,
-            width: 110,
-            padding: "0 10px",
-            borderRadius: 6,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <p style={{ fontSize: "14px", color: "#ffffffcc" }}>
-            {wf[1] ? wf[1] : ""}
-          </p>
-        </div>
-        {/* CONNECTED DEVICE END */}
       </div>
     </div>
   );
@@ -485,15 +269,20 @@ export const className = `
   #parent:hover #containerWifi {
     top: 40% !important;
   }
-  #parent {
-    z-index: 10000 !important;
+
+  #controls{
+    transition: 400ms
+  }
+
+  #controls:active{
+    transform: scale(0.8);
   }
 `;
 
 const styles = {
   parent: {
     position: "relative",
-    top: 750,
+    top: 752,
     left: 0,
     height: 170,
     width: 600,
@@ -505,27 +294,22 @@ const styles = {
     left: "1.5%",
     fontFamily: "Montserrat, sans-serif",
     width: 270,
-    height: 55,
+    height: 75,
     borderRadius: 18,
     display: "flex",
     alignItems: "center",
     color: "#fff",
-    padding: "10px 15px",
-    border: "0.5px solid #ffffff20",
-    background: "#00000030",
     transition: "500ms all ease",
   },
   albumImg: {
-    display: "block",
-    height: 50,
-    width: 50,
-    borderRadius: 10,
+    height: 80,
+    width: 80,
   },
   right: {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    paddingTop: 3,
+    paddingTop: 7,
   },
   title: {
     display: "flex",
@@ -538,7 +322,7 @@ const styles = {
   },
   trackName: {
     overflow: "hidden",
-    width: "130px",
+    width: "90px",
     color: "#fff",
     display: "inline-block",
   },
@@ -550,7 +334,7 @@ const styles = {
     gap: "5px",
   },
   player: {
-    width: 220,
+    width: 180,
     display: "flex",
     gap: 10,
     alignItems: "center",
@@ -562,10 +346,6 @@ const styles = {
   playerThumb: {
     height: 7,
     width: "100%",
-    background: "#ffffff15",
     borderRadius: 10,
-  },
-  timePlayed: {
-    opacity: 0.4,
   },
 };
