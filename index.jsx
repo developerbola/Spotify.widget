@@ -30,36 +30,21 @@ export const render = ({ output }) => {
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
-      // Check if canvas context is available
-      if (!context) {
-        console.error("Canvas context is not available.");
-        return;
-      }
-
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
-
-      // Check for valid dimensions
-      if (!canvas.width || !canvas.height) {
-        console.error("Invalid image dimensions:", canvas.width, canvas.height);
-        return;
-      }
-
-      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.width = 100;
+      canvas.height = 100;
+      context.drawImage(img, 0, 0, 100, 100);
 
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
-      let factor = 6;
 
       const colorCounts = {};
       for (let i = 0; i < pixels.length; i += 4) {
-        const r = Math.min(Math.floor(parseInt(pixels[i]) * factor), 255);
-        const g = Math.min(Math.floor(parseInt(pixels[i + 1]) * factor), 255);
-        const b = Math.min(Math.floor(parseInt(pixels[i + 2]) * factor), 255);
+        const r = Math.floor(parseInt(pixels[i]));
+        const g = Math.floor(parseInt(pixels[i + 1]));
+        const b = Math.floor(parseInt(pixels[i + 2]));
         const color = `${r},${g},${b}`;
         colorCounts[color] = (colorCounts[color] || 0) + 1;
       }
-
       var sortedColors = Object.entries(colorCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([color]) => color);
@@ -80,42 +65,109 @@ export const render = ({ output }) => {
       g = Math.floor(g / count);
       b = Math.floor(b / count);
 
-      document.getElementById("right").style.mixBlendMode = "overlay";
-
-      if (g > 80 || b > 80) {
-        document.getElementById("right").style.mixBlendMode = "difference";
-      }
-      if (r < 100) {
-        document.getElementById("right").style.mixBlendMode = "plus-lighter";
-        factor = 4;
-      }
-      if (r < 50) {
-        factor = 6;
-      }
-
+      const background = `${r}, ${g}, ${b}`;
+      const color = `${sortedColors[1]}`;
       // Update avgColor state or variable
       document.getElementById(
         "container"
-      ).style.background = `rgb(${r}, ${g}, ${b})`;
+      ).style.background = `rgb(${background})`;
       document.getElementById(
         "imageCover"
-      ).style.background = `linear-gradient(90deg , transparent, rgb(${r}, ${g}, ${b}) )`;
+      ).style.background = `linear-gradient(90deg , transparent, rgb(${background}) )`;
 
-      document.getElementById(
-        "container"
-      ).style.color = `rgb(${sortedColors[1]})`;
-      document.getElementById(
-        "trackname"
-      ).style.color = `rgb(${sortedColors[1]})`;
-      document.getElementById(
-        "playerthumb"
-      ).style.background = `rgb(${sortedColors[1]})`;
+      document.getElementById("container").style.color = `rgb(${color})`;
+      document.getElementById("trackname").style.color = `rgb(${color})`;
+      document.getElementById("playerthumb").style.background = `rgb(${color})`;
       document.getElementById(
         "playerthumbcontainer"
-      ).style.background = `rgb(${sortedColors[1]},0.3)`;
+      ).style.background = `rgb(${color},0.3)`;
       document
         .querySelectorAll("#controls")
-        .forEach((e) => (e.style.fill = `rgb(${sortedColors[1]})`));
+        .forEach((e) => (e.style.fill = `rgb(${color})`));
+
+      // =========== check color similar ===========
+      function colorDistance(color1, color2) {
+        const [r1, g1, b1] = color1.match(/\d+/g).map(Number);
+        const [r2, g2, b2] = color2.match(/\d+/g).map(Number);
+        return Math.sqrt(
+          Math.pow(r2 - r1, 2) + Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2)
+        );
+      }
+
+      function isColorSimilar(color1, color2) {
+        return colorDistance(color1, color2) < 100;
+      }
+
+      function adjustTextColorBasedOnBackground(
+        backgroundColor,
+        secondaryColor
+      ) {
+        // Helper function to calculate relative luminance
+        function luminance(r, g, b) {
+          const a = [r, g, b].map((v) => {
+            v /= 255;
+            return v <= 0.03928
+              ? v / 12.92
+              : Math.pow((v + 0.055) / 1.055, 2.4);
+          });
+          return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+        }
+
+        // Convert background and secondary colors to RGB arrays
+        const bgRgb = backgroundColor.match(/\d+/g).map(Number);
+        const secRgb = secondaryColor.match(/\d+/g).map(Number);
+
+        // Calculate the luminance of the background color
+        const bgLuminance = luminance(...bgRgb);
+
+        // Determine if the background is light or dark
+        const isBackgroundLight = bgLuminance > 0.5;
+
+        // Adjust the secondary color based on the background luminance
+        const adjustedColor = isBackgroundLight
+          ? darkenColor(secRgb)
+          : lightenColor(secRgb);
+
+        return `rgb(${adjustedColor.join(",")})`;
+      }
+
+      // Helper function to darken a color
+      function darkenColor([r, g, b], amount = 150) {
+        return [
+          Math.max(r - amount, 0),
+          Math.max(g - amount, 0),
+          Math.max(b - amount, 0),
+        ];
+      }
+
+      // Helper function to lighten a color
+      function lightenColor([r, g, b], amount = 150) {
+        return [
+          Math.min(r + amount, 255),
+          Math.min(g + amount, 255),
+          Math.min(b + amount, 255),
+        ];
+      }
+      if (isColorSimilar(color, background)) {
+        document.getElementById("container").style.color =
+          adjustTextColorBasedOnBackground(background, color);
+        document.getElementById("trackname").style.color =
+          adjustTextColorBasedOnBackground(background, color);
+        console.log(adjustTextColorBasedOnBackground(background, color));
+
+        document.getElementById("playerthumb").style.background =
+          adjustTextColorBasedOnBackground(background, color);
+
+        document
+          .querySelectorAll("#controls")
+          .forEach(
+            (e) =>
+              (e.style.fill = adjustTextColorBasedOnBackground(
+                background,
+                color
+              ))
+          );
+      }
     } catch (error) {
       console.error("Error in getAverageRGB:", error);
     }
@@ -142,7 +194,6 @@ export const render = ({ output }) => {
             style={{ ...styles.albumImg, flex: "1 1 auto" }}
             src={spotify[2] ? spotify[2] : "Spotify.widget/spotify.jpg"}
             alt="Album Art"
-            onDoubleClick={() => commandSpotify('quit app "Spotify"')}
             id="image"
             crossOrigin="anonymous"
             onLoad={(e) => getAverageRGB(e)}
@@ -156,6 +207,7 @@ export const render = ({ output }) => {
               height: 80,
               width: 80,
             }}
+            onDoubleClick={() => commandSpotify('quit app "Spotify"')}
             id="imageCover"
           ></div>
         </div>
@@ -272,11 +324,11 @@ export const className = `
     top: 40% !important;
   }
 
-  #controls{
-    transition: 400ms
+  #controls {
+    transition: transform 400ms;
   }
 
-  #controls:active{
+  #controls:active {
     transform: scale(0.8);
   }
 `;
@@ -301,7 +353,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     color: "#fff",
-    transition: "500ms all ease",
   },
   albumImg: {
     height: 80,
