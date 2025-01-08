@@ -114,7 +114,7 @@ export const render = ({ output }) => {
           ? darkenColor(secRgb)
           : lightenColor(secRgb);
 
-        return `rgb(${adjustedColor.join(",")})`;
+        return `${adjustedColor.join(",")}`;
       }
 
       // Helper function to darken a color
@@ -135,23 +135,40 @@ export const render = ({ output }) => {
         ];
       }
       if (isColorSimilar(color, background)) {
-        document.getElementById("container").style.color =
-          adjustTextColorBasedOnBackground(background, color);
-        document.getElementById("trackname").style.color =
-          adjustTextColorBasedOnBackground(background, color);
-        console.log(adjustTextColorBasedOnBackground(background, color));
+        document.getElementById(
+          "container"
+        ).style.color = `rgb(${adjustTextColorBasedOnBackground(
+          background,
+          color
+        )})`;
+        document.getElementById(
+          "trackname"
+        ).style.color = `rgb(${adjustTextColorBasedOnBackground(
+          background,
+          color
+        )})`;
 
-        document.getElementById("playerthumb").style.background =
-          adjustTextColorBasedOnBackground(background, color);
+        document.getElementById(
+          "playerthumb"
+        ).style.background = `rgb(${adjustTextColorBasedOnBackground(
+          background,
+          color
+        )})`;
 
+        document.getElementById(
+          "playerthumbcontainer"
+        ).style.background = `rgb(${adjustTextColorBasedOnBackground(
+          background,
+          color
+        )},0.3)`;
         document
           .querySelectorAll("#controls")
           .forEach(
             (e) =>
-              (e.style.fill = adjustTextColorBasedOnBackground(
+              (e.style.fill = `rgb(${adjustTextColorBasedOnBackground(
                 background,
                 color
-              ))
+              )})`)
           );
       }
     } catch (error) {
