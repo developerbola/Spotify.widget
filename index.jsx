@@ -30,11 +30,11 @@ export const render = ({ output }) => {
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
-      canvas.width = 1000;
-      canvas.height = 1000;
-      context.drawImage(img, 0, 0, 1000, 1000);
+      canvas.width = 100;
+      canvas.height = 100;
+      context.drawImage(img, 0, 0, 100, 100);
 
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, 100, 100);
       const pixels = imageData.data;
 
       const colorCounts = {};
