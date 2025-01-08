@@ -30,9 +30,9 @@ export const render = ({ output }) => {
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
-      canvas.width = 100;
-      canvas.height = 100;
-      context.drawImage(img, 0, 0, 100, 100);
+      canvas.width = 1000;
+      canvas.height = 1000;
+      context.drawImage(img, 0, 0, 1000, 1000);
 
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
@@ -49,28 +49,14 @@ export const render = ({ output }) => {
         .sort((a, b) => b[1] - a[1])
         .map(([color]) => color);
 
-      let r = 0,
-        g = 0,
-        b = 0,
-        count = 0;
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        r += pixels[i]; // Red
-        g += pixels[i + 1]; // Green
-        b += pixels[i + 2]; // Blue
-        count++;
-      }
-
-      r = Math.floor(r / count);
-      g = Math.floor(g / count);
-      b = Math.floor(b / count);
-
-      const background = `${r}, ${g}, ${b}`;
-      const color = `${sortedColors[1]}`;
+      const background = sortedColors[0];
+      const color = sortedColors[1];
       // Update avgColor state or variable
+
       document.getElementById(
         "container"
       ).style.background = `rgb(${background})`;
+
       document.getElementById(
         "imageCover"
       ).style.background = `linear-gradient(90deg , transparent, rgb(${background}) )`;
@@ -174,7 +160,7 @@ export const render = ({ output }) => {
   }
 
   return (
-    <div style={styles.parent} id="parent">
+    <div style={{ ...styles.parent }} id="parent">
       {/* SPOTIFY CONTAINER */}
       <div
         style={{
@@ -191,7 +177,7 @@ export const render = ({ output }) => {
           }}
         >
           <img
-            style={{ ...styles.albumImg, flex: "1 1 auto" }}
+            style={{ ...styles.albumImg }}
             src={spotify[2] ? spotify[2] : "Spotify.widget/spotify.jpg"}
             alt="Album Art"
             id="image"
