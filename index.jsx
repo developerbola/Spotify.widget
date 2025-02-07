@@ -34,7 +34,7 @@ export const render = ({ output }) => {
       canvas.height = 100;
       context.drawImage(img, 0, 0, 100, 100);
 
-      const imageData = context.getImageData(0, 0, 100, 100);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
 
       const colorCounts = {};
