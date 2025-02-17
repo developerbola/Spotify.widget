@@ -1,6 +1,6 @@
 import { run } from "uebersicht";
 export const command = "source Spotify.widget/spotify.sh";
-export let refreshFrequency = 500;
+export let refreshFrequency = 800;
 let perc = 0;
 export const render = ({ output }) => {
   if (output === undefined) return;
@@ -176,6 +176,10 @@ export const render = ({ output }) => {
     }
   }
 
+  function smoothTrackChange() {
+    document.getElementById("image").style.filter = "blur(10px)";
+  }
+
   return (
     <div style={{ ...styles.parent }} id="parent">
       {/* SPOTIFY CONTAINER */}
@@ -204,7 +208,7 @@ export const render = ({ output }) => {
             alt="Album Art"
             id="image"
             crossOrigin="anonymous"
-            loading="lazy"
+            loading="eager"
             onLoad={(e) => {
               e.target.style.filter = "blur(0px)";
               getAverageRGB(e);
@@ -240,7 +244,7 @@ export const render = ({ output }) => {
                 height={15}
                 width={15}
                 onClick={() => {
-                  document.getElementById("image").style.filter = "blur(10px)";
+                  smoothTrackChange();
                   commandSpotify("previous track");
                 }}
                 id="controls"
@@ -292,7 +296,7 @@ export const render = ({ output }) => {
                 height={15}
                 width={15}
                 onClick={() => {
-                  document.getElementById("image").style.filter = "blur(10px)";
+                  smoothTrackChange();
                   commandSpotify("next track");
                 }}
                 id="controls"
@@ -350,12 +354,12 @@ export const className = `
     transform: scale(0.8);
   }
   #image {
-    transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
+    transition: filter 0.3s ease-in-out, opacity 0.8s ease-in-out;
   }
   #container {
   }
   #playerthumb {
-    transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
+    transition: width 0.3s ease-in-out, background 0.5s ease-in-out;
   }
 `;
 
