@@ -353,7 +353,6 @@ export const className = `
     transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
   }
   #container {
-    transition: background 0.8s ease-in-out;
   }
   #playerthumb {
     transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
