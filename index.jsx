@@ -29,16 +29,16 @@ export const render = ({ output }) => {
       const img = e.target;
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
-
-      canvas.width = 100;
-      canvas.height = 100;
-      context.drawImage(img, 0, 0, 100, 100);
+      const size = 50;
+      canvas.width = size;
+      canvas.height = size;
+      context.drawImage(img, 0, 0, size, size);
 
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
 
       const colorCounts = {};
-      for (let i = 0; i < pixels.length; i += 4) {
+      for (let i = 0; i < pixels.length; i += 20) {
         const r = Math.floor(parseInt(pixels[i]));
         const g = Math.floor(parseInt(pixels[i + 1]));
         const b = Math.floor(parseInt(pixels[i + 2]));
@@ -183,6 +183,7 @@ export const render = ({ output }) => {
         style={{
           ...styles.container,
           overflow: "hidden",
+          WebkitBackdropFilter: "blur(10px)",
         }}
         id="container"
       >
@@ -194,13 +195,22 @@ export const render = ({ output }) => {
           }}
         >
           <img
-            style={{ ...styles.albumImg }}
-            src={spotify[2] ? spotify[2] : "Spotify.widget/spotify.jpg"}
+            style={{
+              ...styles.albumImg,
+              filter: "blur(10px)",
+              transition: "filter 0.5s ease-out",
+            }}
+            src={spotify[2] || "Spotify.widget/spotify.jpg"}
             alt="Album Art"
             id="image"
             crossOrigin="anonymous"
-            onLoad={(e) => getAverageRGB(e)}
+            loading="lazy"
+            onLoad={(e) => {
+              e.target.style.filter = "blur(0px)";
+              getAverageRGB(e);
+            }}
           />
+
           <div
             style={{
               position: "absolute",
@@ -229,7 +239,10 @@ export const render = ({ output }) => {
                 fill={"#ffffff90"}
                 height={15}
                 width={15}
-                onClick={() => commandSpotify("previous track")}
+                onClick={() => {
+                  document.getElementById("image").style.filter = "blur(10px)";
+                  commandSpotify("previous track");
+                }}
                 id="controls"
               >
                 <path d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-320c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3l0 41.7 0 41.7L459.5 440.6zM256 352l0-96 0-128 0-32c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-64z" />
@@ -278,7 +291,10 @@ export const render = ({ output }) => {
                 fill={"#ffffff90"}
                 height={15}
                 width={15}
-                onClick={() => commandSpotify("next track")}
+                onClick={() => {
+                  document.getElementById("image").style.filter = "blur(10px)";
+                  commandSpotify("next track");
+                }}
                 id="controls"
               >
                 <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416L0 96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3l0 41.7 0 41.7L52.5 440.6zM256 352l0-96 0-128 0-32c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29l0-64z" />
@@ -295,7 +311,8 @@ export const render = ({ output }) => {
               <div
                 style={{
                   ...styles.playerThumb,
-                  width: perc > 0 ? `${perc}%` : 0,
+                  width: perc ? `${perc}%` : 0,
+                  opacity: perc ? "1" : "0.3",
                 }}
                 id="playerthumb"
               ></div>
@@ -322,17 +339,24 @@ const formatTime = (time) => {
 export const className = `
   user-select: none;
   cursor: default;
-  #parent:hover #containerAirpods,
-  #parent:hover #containerWifi {
-    top: 40% !important;
-  }
 
+  * {
+    overflow: hidden;
+  }
   #controls {
     transition: transform 400ms;
   }
-
   #controls:active {
     transform: scale(0.8);
+  }
+  #image {
+    transition: filter 0.8s ease-in-out, opacity 0.8s ease-in-out;
+  }
+  #container {
+    transition: background 0.8s ease-in-out;
+  }
+  #playerthumb {
+    transition: width 0.5s ease-in-out, background 0.5s ease-in-out;
   }
 `;
 
@@ -340,15 +364,14 @@ const styles = {
   parent: {
     position: "relative",
     top: 752,
-    left: 0,
+    left: 1040,
     height: 170,
-    width: 600,
-    zIndex: 10000,
+    width: 400,
   },
   container: {
     position: "absolute",
     top: "40%",
-    left: "1.5%",
+    left: "calc(100% - 280px)",
     fontFamily: "Montserrat, sans-serif",
     width: 270,
     height: 75,
@@ -356,10 +379,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     color: "#fff",
+    overflow: "hidden",
   },
   albumImg: {
     height: 80,
     width: 80,
+    borderRadius: 18,
+    overflow: "hidden",
   },
   right: {
     display: "flex",
@@ -403,5 +429,8 @@ const styles = {
     height: 7,
     width: "100%",
     borderRadius: 10,
+  },
+  timePlayed: {
+    width: 45,
   },
 };
