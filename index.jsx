@@ -221,8 +221,8 @@ export const render = ({ output }) => {
               zIndex: 10,
               top: 0,
               left: 0,
-              height: 80,
-              width: 80,
+              height: "100%",
+              width: "100%",
             }}
             onDoubleClick={() => commandSpotify('quit app "Spotify"')}
             id="imageCover"
@@ -356,8 +356,6 @@ export const className = `
   #image {
     transition: filter 0.3s ease-in-out, opacity 0.8s ease-in-out;
   }
-  #container {
-  }
   #playerthumb {
     transition: width 0.3s ease-in-out, background 0.5s ease-in-out;
   }
@@ -366,8 +364,8 @@ export const className = `
 const styles = {
   parent: {
     position: "relative",
-    top: 752,
-    left: 1040,
+    top: 761,
+    left: 1050,
     height: 170,
     width: 400,
   },
@@ -376,8 +374,8 @@ const styles = {
     top: "40%",
     left: "calc(100% - 280px)",
     fontFamily: "Montserrat, sans-serif",
-    width: 270,
-    height: 75,
+    width: 260,
+    height: 70,
     borderRadius: 18,
     display: "flex",
     alignItems: "center",
@@ -385,9 +383,8 @@ const styles = {
     overflow: "hidden",
   },
   albumImg: {
-    height: 80,
-    width: 80,
-    borderRadius: 18,
+    height: "100%",
+    width: "auto",
     overflow: "hidden",
   },
   right: {
