@@ -56,20 +56,16 @@ export const render = ({ output }) => {
       document.getElementById(
         "container"
       ).style.background = `rgb(${background})`;
+      document.getElementById(
+        "container"
+      ).style.border = `0.5px solid rgb(${adjustTextColorBasedOnBackground(
+        background,
+        color
+      )},0.2)`;
 
       document.getElementById(
         "imageCover"
       ).style.background = `linear-gradient(90deg , transparent, rgb(${background}) )`;
-
-      document.getElementById("container").style.color = `rgb(${color})`;
-      document.getElementById("trackname").style.color = `rgb(${color})`;
-      document.getElementById("playerthumb").style.background = `rgb(${color})`;
-      document.getElementById(
-        "playerthumbcontainer"
-      ).style.background = `rgb(${color},0.3)`;
-      document
-        .querySelectorAll("#controls")
-        .forEach((e) => (e.style.fill = `rgb(${color})`));
 
       // =========== check color similar ===========
       function colorDistance(color1, color2) {
@@ -171,6 +167,7 @@ export const render = ({ output }) => {
               )})`)
           );
       }
+      window.vibeBG = background;
     } catch (error) {
       console.error("Error in getAverageRGB:", error);
     }
@@ -364,7 +361,7 @@ export const className = `
 const styles = {
   parent: {
     position: "relative",
-    top: 761,
+    top: 760,
     left: 1050,
     height: 170,
     width: 400,
