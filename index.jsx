@@ -6,7 +6,6 @@ export const render = ({ output }) => {
   if (output === undefined) return;
 
   const spotify = output?.split("!!")[0].split("|");
-  console.log(spotify[3]);
 
   const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
   const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
@@ -64,14 +63,15 @@ export const render = ({ output }) => {
         color
       )},0.2)`;
 
-      
       document.getElementById("container").style.color = `rgb(${color})`;
       document.getElementById("trackname").style.color = `rgb(${color})`;
       document.getElementById("playerthumb").style.background = `rgb(${color})`;
       document.getElementById(
         "playerthumbcontainer"
       ).style.background = `rgb(${color},0.3)`;
-
+      document
+        .querySelectorAll("#controls")
+        .forEach((e) => (e.style.fill = `rgb(${color})`));
 
       document.getElementById(
         "imageCover"
@@ -190,150 +190,147 @@ export const render = ({ output }) => {
   }
 
   return (
-    <div style={{ ...styles.parent }} id="parent">
-      {/* SPOTIFY CONTAINER */}
+    <div
+      style={{
+        ...styles.container,
+        overflow: "hidden",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+      id="container"
+    >
       <div
+        id="cover"
         style={{
-          ...styles.container,
-          overflow: "hidden",
-          WebkitBackdropFilter: "blur(10px)",
+          ...styles.albumImg,
+          position: "relative",
         }}
-        id="container"
       >
-        <div
-          id="cover"
+        <img
           style={{
             ...styles.albumImg,
-            position: "relative",
+            filter: "blur(10px)",
+            transition: "filter 0.5s ease-out",
           }}
-        >
-          <img
-            style={{
-              ...styles.albumImg,
-              filter: "blur(10px)",
-              transition: "filter 0.5s ease-out",
-            }}
-            src={spotify[2] || "Spotify.widget/spotify.jpg"}
-            alt="Album Art"
-            id="image"
-            crossOrigin="anonymous"
-            loading="eager"
-            onLoad={(e) => {
-              e.target.style.filter = "blur(0px)";
-              getAverageRGB(e);
-            }}
-          />
+          src={spotify[2] || "Spotify.widget/spotify.jpg"}
+          alt="Album Art"
+          id="image"
+          crossOrigin="anonymous"
+          loading="eager"
+          onLoad={(e) => {
+            e.target.style.filter = "blur(0px)";
+            getAverageRGB(e);
+          }}
+        />
 
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 10,
-              top: 0,
-              left: 0,
-              height: "100%",
-              width: "100%",
-            }}
-            onDoubleClick={() => commandSpotify('quit app "Spotify"')}
-            id="imageCover"
-          ></div>
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 10,
+            top: 0,
+            left: 0,
+            height: "100%",
+            width: "100%",
+          }}
+          onDoubleClick={() => commandSpotify('quit app "Spotify"')}
+          id="imageCover"
+        ></div>
+      </div>
+
+      <div style={{ ...styles.right }} id="right">
+        {/* Track Name and Controls */}
+        <div style={styles.title}>
+          <div style={styles.trackName} id="trackname">
+            {spotify[0] ? spotify[0] : "Not Running"}
+          </div>
+          <div style={styles.controls}>
+            {/* Previous Button */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 512 512"
+              fill={"#ffffff90"}
+              height={15}
+              width={15}
+              onClick={() => {
+                smoothTrackChange();
+                commandSpotify("previous track");
+              }}
+              id="controls"
+            >
+              <path d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-320c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3l0 41.7 0 41.7L459.5 440.6zM256 352l0-96 0-128 0-32c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-64z" />
+            </svg>
+
+            {/* Play/Pause Button */}
+            {spotify[3] !== "playing" ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 384 512"
+                height={16}
+                width={18}
+                fill={"#ffffff90"}
+                onClick={() => {
+                  isNaN(timePlayed)
+                    ? run(
+                        `osascript -e 'tell application "Spotify" to play track "spotify:playlist:1Rp9TzAzZSlU8LAYASlgRR"'`
+                      )
+                    : commandSpotify("play");
+                }}
+                onDoubleClick={() =>
+                  run(`osascript -e 'tell application "Spotify" to play'`)
+                }
+                id="controls"
+              >
+                <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 320 512"
+                height={18}
+                width={18}
+                fill={"#ffffff90"}
+                onClick={() => commandSpotify("pause")}
+                id="controls"
+              >
+                <path d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z" />
+              </svg>
+            )}
+
+            {/* Next Button */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 512 512"
+              fill={"#ffffff90"}
+              height={15}
+              width={15}
+              onClick={() => {
+                smoothTrackChange();
+                commandSpotify("next track");
+              }}
+              id="controls"
+            >
+              <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416L0 96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3l0 41.7 0 41.7L52.5 440.6zM256 352l0-96 0-128 0-32c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29l0-64z" />
+            </svg>
+          </div>
         </div>
 
-        <div style={{ ...styles.right }} id="right">
-          {/* Track Name and Controls */}
-          <div style={styles.title}>
-            <div style={styles.trackName} id="trackname">
-              {spotify[0] ? spotify[0] : "Not Running"}
-            </div>
-            <div style={styles.controls}>
-              {/* Previous Button */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 512 512"
-                fill={"#ffffff90"}
-                height={15}
-                width={15}
-                onClick={() => {
-                  smoothTrackChange();
-                  commandSpotify("previous track");
-                }}
-                id="controls"
-              >
-                <path d="M459.5 440.6c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-320c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4L288 214.3l0 41.7 0 41.7L459.5 440.6zM256 352l0-96 0-128 0-32c0-12.4-7.2-23.7-18.4-29s-24.5-3.6-34.1 4.4l-192 160C4.2 237.5 0 246.5 0 256s4.2 18.5 11.5 24.6l192 160c9.5 7.9 22.8 9.7 34.1 4.4s18.4-16.6 18.4-29l0-64z" />
-              </svg>
-
-              {/* Play/Pause Button */}
-              {spotify[3] !== "playing" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 384 512"
-                  height={16}
-                  width={18}
-                  fill={"#ffffff90"}
-                  onClick={() => {
-                    isNaN(timePlayed)
-                      ? run(
-                          `osascript -e 'tell application "Spotify" to play track "spotify:playlist:1Rp9TzAzZSlU8LAYASlgRR"'`
-                        )
-                      : commandSpotify("play");
-                  }}
-                  onDoubleClick={() =>
-                    run(`osascript -e 'tell application "Spotify" to play'`)
-                  }
-                  id="controls"
-                >
-                  <path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 320 512"
-                  height={18}
-                  width={18}
-                  fill={"#ffffff90"}
-                  onClick={() => commandSpotify("pause")}
-                  id="controls"
-                >
-                  <path d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z" />
-                </svg>
-              )}
-
-              {/* Next Button */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 512 512"
-                fill={"#ffffff90"}
-                height={15}
-                width={15}
-                onClick={() => {
-                  smoothTrackChange();
-                  commandSpotify("next track");
-                }}
-                id="controls"
-              >
-                <path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416L0 96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3l0 41.7 0 41.7L52.5 440.6zM256 352l0-96 0-128 0-32c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29l0-64z" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Player Thumb */}
-          <div style={styles.player}>
+        {/* Player Thumb */}
+        <div style={styles.player}>
+          <div
+            style={{ ...styles.playerThumb, overflow: "hidden" }}
+            id="playerthumbcontainer"
+          >
             <div
-              style={{ ...styles.playerThumb, overflow: "hidden" }}
-              id="playerthumbcontainer"
-            >
-              <div
-                style={{
-                  ...styles.playerThumb,
-                  width: perc ? `${perc}%` : 0,
-                  opacity: perc ? "1" : "0.3",
-                }}
-                id="playerthumb"
-              ></div>
-            </div>
-            <span style={styles.timePlayed}>
-              {isNaN(timePlayed) ? "0:00" : formatTime(timePlayed) || "0:00"}
-            </span>
+              style={{
+                ...styles.playerThumb,
+                width: perc ? `${perc}%` : 0,
+                opacity: perc ? "1" : "0.3",
+              }}
+              id="playerthumb"
+            ></div>
           </div>
+          <span style={styles.timePlayed}>
+            {isNaN(timePlayed) ? "0:00" : formatTime(timePlayed) || "0:00"}
+          </span>
         </div>
       </div>
     </div>
@@ -371,17 +368,10 @@ export const className = `
 `;
 
 const styles = {
-  parent: {
-    position: "relative",
-    top: 760,
-    left: 1050,
-    height: 170,
-    width: 400,
-  },
   container: {
     position: "absolute",
-    top: "40%",
-    left: "calc(100% - 280px)",
+    top: 828,
+    left: 1170,
     fontFamily: "Montserrat, sans-serif",
     width: 260,
     height: 70,
