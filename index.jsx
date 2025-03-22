@@ -1,11 +1,12 @@
 import { run } from "uebersicht";
 export const command = "source Spotify.widget/spotify.sh";
-export let refreshFrequency = 800;
+export let refreshFrequency = 1000;
 let perc = 0;
 export const render = ({ output }) => {
   if (output === undefined) return;
 
   const spotify = output?.split("!!")[0].split("|");
+  console.log(spotify[3]);
 
   const timePlayed = spotify?.length > 5 ? parseInt(spotify[5]) : 0;
   const totalTime = Math.ceil(parseInt(spotify[4]) / 1000);
@@ -62,6 +63,15 @@ export const render = ({ output }) => {
         background,
         color
       )},0.2)`;
+
+      
+      document.getElementById("container").style.color = `rgb(${color})`;
+      document.getElementById("trackname").style.color = `rgb(${color})`;
+      document.getElementById("playerthumb").style.background = `rgb(${color})`;
+      document.getElementById(
+        "playerthumbcontainer"
+      ).style.background = `rgb(${color},0.3)`;
+
 
       document.getElementById(
         "imageCover"
@@ -167,7 +177,9 @@ export const render = ({ output }) => {
               )})`)
           );
       }
-      window.vibeBG = background;
+      if (spotify[3] !== undefined) {
+        window.vibeBG = background;
+      }
     } catch (error) {
       console.error("Error in getAverageRGB:", error);
     }
