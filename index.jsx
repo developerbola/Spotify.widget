@@ -371,9 +371,9 @@ const styles = {
   container: {
     position: "absolute",
     top: 828,
-    left: 1170,
+    left: 1181,
     fontFamily: "Montserrat, sans-serif",
-    width: 260,
+    width: 250,
     height: 70,
     borderRadius: 18,
     display: "flex",
@@ -403,7 +403,7 @@ const styles = {
   },
   trackName: {
     overflow: "hidden",
-    width: "90px",
+    width: "80px",
     color: "#fff",
     display: "inline-block",
   },
@@ -415,7 +415,7 @@ const styles = {
     gap: "5px",
   },
   player: {
-    width: 180,
+    width: 170,
     display: "flex",
     gap: 10,
     alignItems: "center",
