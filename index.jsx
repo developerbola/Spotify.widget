@@ -41,10 +41,10 @@ export const render = ({ output }) => {
       canvas.width = size;
       canvas.height = size;
       context.drawImage(img, 0, 0, size, size);
-  
+
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imageData.data;
-  
+
       // Color quantization with improved binning
       const colorCounts = {};
       for (let i = 0; i < pixels.length; i += 4) {
@@ -53,128 +53,138 @@ export const render = ({ output }) => {
         const g = Math.floor(pixels[i + 1] / 5) * 5;
         const b = Math.floor(pixels[i + 2] / 5) * 5;
         const a = pixels[i + 3];
-        
+
         // Skip transparent or near-black pixels (often shadows)
         if (a < 200 || (r < 15 && g < 15 && b < 15)) continue;
-        
+
         const color = `${r},${g},${b}`;
         colorCounts[color] = (colorCounts[color] || 0) + 1;
       }
-  
+
       // Sort colors by frequency
       const sortedColors = Object.entries(colorCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([color]) => color);
-  
+
       // Get background color - prefer non-grayscale colors when possible
-      let backgroundOptions = sortedColors.filter(color => {
-        const [r, g, b] = color.split(',').map(Number);
+      let backgroundOptions = sortedColors.filter((color) => {
+        const [r, g, b] = color.split(",").map(Number);
         // Filter out grayscale colors (where R, G, B are very close)
-        const variance = Math.max(Math.abs(r-g), Math.abs(r-b), Math.abs(g-b));
+        const variance = Math.max(
+          Math.abs(r - g),
+          Math.abs(r - b),
+          Math.abs(g - b)
+        );
         return variance > 15; // At least some color difference
       });
-      
-      const background = backgroundOptions.length > 0 ? 
-        backgroundOptions[0] : sortedColors[0];
-      
+
+      const background =
+        backgroundOptions.length > 0 ? backgroundOptions[0] : sortedColors[0];
+
       // Filter out colors too similar to background for secondary color
       let colorOptions = sortedColors.filter(
-        color => !isColorSimilar(color, background, 60)
+        (color) => !isColorSimilar(color, background, 60)
       );
-      
+
       // If no good options, use a contrasting color
-      const color = colorOptions.length > 0 ? 
-        colorOptions[0] : getContrastColor(background);
-  
+      const color =
+        colorOptions.length > 0
+          ? colorOptions[0]
+          : getContrastColor(background);
+
       // Apply colors to UI elements
       applyColorScheme(background, color);
-      
     } catch (error) {
       console.error("Error in getAverageRGB:", error);
       // Apply fallback colors
       applyColorScheme("128,128,128", "255,255,255");
     }
   }
-  
+
   // Improved color distance calculation
   function isColorSimilar(color1, color2, threshold = 100) {
-    const [r1, g1, b1] = color1.split(',').map(Number);
-    const [r2, g2, b2] = color2.split(',').map(Number);
-    
+    const [r1, g1, b1] = color1.split(",").map(Number);
+    const [r2, g2, b2] = color2.split(",").map(Number);
+
     // Weighted Euclidean distance that better matches human perception
     const distance = Math.sqrt(
-      2 * Math.pow(r2 - r1, 2) + 
-      4 * Math.pow(g2 - g1, 2) + 
-      Math.pow(b2 - b1, 2)
+      2 * Math.pow(r2 - r1, 2) + 4 * Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2)
     );
-    
+
     return distance < threshold;
   }
-  
+
   // Calculate contrast color based on luminance
   function getContrastColor(color) {
-    const [r, g, b] = color.split(',').map(Number);
-    
+    const [r, g, b] = color.split(",").map(Number);
+
     // Calculate relative luminance using standard formula
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
+
     // Return either black or white depending on background luminance
     return luminance > 0.5 ? "0,0,0" : "255,255,255";
   }
-  
+
   // Adjust color lightness to ensure readability
   function adjustColorLightness(color, isBackgroundLight) {
-    const [r, g, b] = color.split(',').map(Number);
-    
+    const [r, g, b] = color.split(",").map(Number);
+
     if (isBackgroundLight) {
       // Darken color for light backgrounds
       return [
         Math.max(r - 100, 0),
         Math.max(g - 100, 0),
-        Math.max(b - 100, 0)
-      ].join(',');
+        Math.max(b - 100, 0),
+      ].join(",");
     } else {
       // Lighten color for dark backgrounds
       return [
         Math.min(r + 100, 255),
         Math.min(g + 100, 255),
-        Math.min(b + 100, 255)
-      ].join(',');
+        Math.min(b + 100, 255),
+      ].join(",");
     }
   }
-  
+
   // Apply the color scheme to all UI elements
   function applyColorScheme(background, color) {
     // Calculate luminance to determine if additional contrast is needed
-    const [r, g, b] = background.split(',').map(Number);
+    const [r, g, b] = background.split(",").map(Number);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     const isBackgroundLight = luminance > 0.5;
-    
+
     // Ensure color has enough contrast with background
-    const finalColor = isColorSimilar(color, background, 120) 
+    const finalColor = isColorSimilar(color, background, 120)
       ? adjustColorLightness(color, isBackgroundLight)
       : color;
-      
+
     // Create semi-transparent version for subtle effects
     const transparentColor = `${finalColor},0.3`;
-    
+
     // Apply background color
-    document.getElementById("container").style.background = `rgb(${background})`;
-    
+    document.getElementById(
+      "container"
+    ).style.background = `rgb(${background})`;
+
     // Apply text and UI element colors
     document.getElementById("container").style.color = `rgb(${finalColor})`;
     document.getElementById("trackname").style.color = `rgb(${finalColor})`;
-    document.getElementById("playerthumb").style.background = `rgb(${finalColor})`;
-    document.getElementById("playerthumbcontainer").style.background = `rgba(${transparentColor})`;
-    
+    document.getElementById(
+      "playerthumb"
+    ).style.background = `rgb(${finalColor})`;
+    document.getElementById(
+      "playerthumbcontainer"
+    ).style.background = `rgba(${transparentColor})`;
+
     // Apply to SVG controls
-    document.querySelectorAll("#controls").forEach(e => {
+    document.querySelectorAll("#controls").forEach((e) => {
       e.style.fill = `rgb(${finalColor})`;
     });
-    
+
     // Create gradient effect for image cover
-    document.getElementById("imageCover").style.background = 
-      `linear-gradient(90deg, transparent, rgb(${background}))`;
+    document.getElementById(
+      "imageCover"
+    ).style.background = `linear-gradient(90deg, transparent, rgb(${background}))`;
   }
 
   // Improved image transition handling
@@ -194,11 +204,20 @@ export const render = ({ output }) => {
       imageElement.style.opacity = "0.7";
     }
   };
-  
+
   // If track changed, trigger blur transition
   if (trackChanged) {
     setTimeout(() => handleTrackChange(), 10);
   }
+
+  const animations = [];
+  if (trackChanged) {
+    animations.push("fadeIn 0.5s ease-in-out");
+  }
+  if (spotify[0]?.length > 15) {
+    animations.push("marquee 10s linear infinite");
+  }
+  const animationStyle = animations.length > 0 ? animations.join(", ") : "none";
 
   return (
     <div
@@ -248,10 +267,14 @@ export const render = ({ output }) => {
       <div style={{ ...styles.right }} id="right">
         {/* Track Name and Controls */}
         <div style={styles.title}>
-          <div style={{
-            ...styles.trackName,
-            animation: trackChanged ? "fadeIn 0.5s ease-in-out" : "none",
-          }} id="trackname">
+          <div
+            style={{
+              ...styles.trackName,
+              whiteSpace: "nowrap",
+              animation: animationStyle,
+            }}
+            id="trackname"
+          >
             {spotify[0] ? spotify[0] : "Not Running"}
           </div>
           <div style={styles.controls}>
@@ -264,6 +287,7 @@ export const render = ({ output }) => {
               width={15}
               onClick={() => {
                 commandSpotify("previous track");
+                handleTrackChange();
               }}
               id="controls"
             >
@@ -315,6 +339,7 @@ export const render = ({ output }) => {
               width={15}
               onClick={() => {
                 commandSpotify("next track");
+                handleTrackChange();
               }}
               id="controls"
             >
@@ -384,6 +409,11 @@ export const className = `
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
 `;
 
 const styles = {
@@ -426,7 +456,7 @@ const styles = {
     color: "#fff",
     display: "inline-block",
     whiteSpace: "nowrap",
-    textOverflow: "ellipsis"
+    textOverflow: "ellipsis",
   },
   controls: {
     width: "40%",
